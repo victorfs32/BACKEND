@@ -1,10 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Armazena as pontuações em memória
-let scores = [];
+// Caminho do arquivo de resultados
+const resultadosPath = path.join(__dirname, 'resultados.json');
 
 // Configura o CORS para permitir requisições do domínio do frontend
 app.use(cors({
@@ -13,8 +15,33 @@ app.use(cors({
 
 app.use(express.json()); // Para interpretar JSON
 
+// Função para ler os resultados do arquivo
+const readScoresFromFile = () => {
+  try {
+    if (fs.existsSync(resultadosPath)) {
+      const fileData = fs.readFileSync(resultadosPath);
+      return JSON.parse(fileData);
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error('Erro ao ler o arquivo de resultados:', error);
+    return [];
+  }
+};
+
+// Função para escrever os resultados no arquivo
+const writeScoresToFile = (scores) => {
+  try {
+    fs.writeFileSync(resultadosPath, JSON.stringify(scores, null, 2));
+  } catch (error) {
+    console.error('Erro ao escrever no arquivo de resultados:', error);
+  }
+};
+
 // Rota para obter as pontuações
 app.get('/api/ranking', (req, res) => {
+  const scores = readScoresFromFile();
   res.json(scores);
 });
 
@@ -23,7 +50,9 @@ app.post('/api/addScore', (req, res) => {
   const { userName, score, timeTaken } = req.body;
   if (userName && score !== undefined && timeTaken !== undefined) {
     try {
+      const scores = readScoresFromFile();
       scores.push({ userName, score, timeTaken });
+      writeScoresToFile(scores);
       res.status(201).json({ message: 'Pontuação adicionada com sucesso!' });
     } catch (error) {
       console.error('Erro ao adicionar pontuação:', error);
@@ -37,7 +66,7 @@ app.post('/api/addScore', (req, res) => {
 // Rota para resetar as pontuações
 app.post('/api/resetScores', (req, res) => {
   try {
-    scores = []; // Limpa o array de pontuações
+    writeScoresToFile([]); // Limpa o array de pontuações
     res.status(200).json({ message: 'Pontuações resetadas com sucesso!' });
   } catch (error) {
     console.error('Erro ao resetar pontuações:', error);
