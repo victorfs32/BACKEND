@@ -1,54 +1,105 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
+import React, { useState } from "react";
 
-const app = express();
-const port = process.env.PORT || 3000;
+const TestConnection = () => {
+  const [response, setResponse] = useState("");
+  const [postData, setPostData] = useState({
+    userName: "",
+    score: "",
+    timeTaken: "",
+  });
+  const [deleteData, setDeleteData] = useState("");
 
-const resultsFilePath = path.join(__dirname, 'results.json');
+  const testGet = () => {
+    fetch("https://backend-eosin-chi-12.vercel.app/")
+      .then((response) => response.text())
+      .then(() => {
+        setResponse("GET request funcionando!");
+      })
+      .catch(() => {
+        setResponse("Erro no GET request");
+      });
+  };
 
-// Configura o CORS para permitir requisições do domínio do frontend
-app.use(cors({
-  origin: 'https://www.ensinandolibras.com.br',
-}));
+  const testPost = () => {
+    fetch("https://backend-eosin-chi-12.vercel.app/scores", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(postData),
+    })
+      .then(() => {
+        setResponse("POST request funcionando!");
+      })
+      .catch(() => {
+        setResponse("Erro no POST request");
+      });
+  };
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+  const testDelete = () => {
+    fetch(`https://backend-eosin-chi-12.vercel.app/scores/${deleteData}`, {
+      method: "DELETE",
+    })
+      .then(() => {
+        setResponse("DELETE request funcionando!");
+      })
+      .catch(() => {
+        setResponse("Erro no DELETE request");
+      });
+  };
 
-// Função para ler resultados do arquivo JSON
-const readResultsFromFile = () => {
-  if (fs.existsSync(resultsFilePath)) {
-    const data = fs.readFileSync(resultsFilePath, 'utf8');
-    return JSON.parse(data);
-  }
-  return [];
+  return (
+    <div>
+      <h1>Teste de Conexão</h1>
+
+      <div>
+        <button onClick={testGet}>Teste GET</button>
+      </div>
+
+      <div>
+        <h2>Teste POST</h2>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            testPost();
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Nome do Usuário"
+            value={postData.userName}
+            onChange={(e) => setPostData({ ...postData, userName: e.target.value })}
+          />
+          <input
+            type="number"
+            placeholder="Pontuação"
+            value={postData.score}
+            onChange={(e) => setPostData({ ...postData, score: e.target.value })}
+          />
+          <input
+            type="number"
+            placeholder="Tempo"
+            value={postData.timeTaken}
+            onChange={(e) => setPostData({ ...postData, timeTaken: e.target.value })}
+          />
+          <button type="submit">Enviar POST</button>
+        </form>
+      </div>
+
+      <div>
+        <h2>Teste DELETE</h2>
+        <input
+          type="text"
+          placeholder="ID para deletar"
+          value={deleteData}
+          onChange={(e) => setDeleteData(e.target.value)}
+        />
+        <button onClick={testDelete}>Deletar</button>
+      </div>
+
+      <p>{response}</p>
+    </div>
+  );
 };
 
-// Função para salvar resultados no arquivo JSON
-const saveResultsToFile = (results) => {
-  fs.writeFileSync(resultsFilePath, JSON.stringify(results, null, 2), 'utf8');
-};
-
-// Endpoint para salvar os resultados
-app.post('/scores', (req, res) => {
-  const { userName, score, timeTaken } = req.body;
-  const results = readResultsFromFile();
-  results.push({ userName, score, timeTaken });
-  saveResultsToFile(results);
-  res.status(201).send('Score saved');
-});
-
-// Endpoint para recuperar resultados
-app.get('/scores', (req, res) => {
-  const results = readResultsFromFile();
-  res.json(results);
-});
-
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
-
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+export default TestConnection;
