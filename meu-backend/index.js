@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-const resultadosPath = path.join(__dirname, 'resultados.json');
+const resultadosPath = path.join(__dirname, 'data', 'resultados.json');
 
 // Configura o CORS para permitir requisições do domínio do frontend
 app.use(cors({
