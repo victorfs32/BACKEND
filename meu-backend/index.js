@@ -1,42 +1,59 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuração do CORS para permitir requisições do domínio do frontend
+const resultadosPath = path.join(__dirname, 'resultados.json');
+
+// Configura o CORS para permitir requisições do domínio do frontend
 app.use(cors({
   origin: 'https://www.ensinandolibras.com.br',
 }));
 
-// Configuração para interpretar JSON
-app.use(express.json());
+app.use(express.json()); // Para interpretar JSON
 
-// Configuração de arquivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
-
-let scores = []; // Array para armazenar pontuações, substitua por banco de dados em produção
-
-// Rota para salvar a pontuação
-app.post('/api/saveScore', (req, res) => {
-  const { userName, score, timeTaken } = req.body;
-  if (!userName || score === undefined || timeTaken === undefined) {
-    return res.status(400).json({ message: 'Dados inválidos' });
+// Função para ler o arquivo de resultados
+const readScoresFromFile = () => {
+  if (fs.existsSync(resultadosPath)) {
+    const fileData = fs.readFileSync(resultadosPath);
+    return JSON.parse(fileData);
+  } else {
+    return [];
   }
-  const newScore = { userName, score, timeTaken };
-  scores.push(newScore);
-  res.status(200).json({ message: 'Pontuação salva com sucesso!' });
-});
+};
 
-// Rota para obter a classificação
+// Função para escrever no arquivo de resultados
+const writeScoresToFile = (scores) => {
+  fs.writeFileSync(resultadosPath, JSON.stringify(scores, null, 2));
+};
+
+// Rota para obter as pontuações
 app.get('/api/ranking', (req, res) => {
-  const sortedScores = scores.sort(
-    (a, b) => b.score - a.score || a.timeTaken - b.timeTaken
-  );
-  res.status(200).json(sortedScores);
+  const scores = readScoresFromFile();
+  res.json(scores);
 });
 
-// Rota raiz (opcional)
+// Rota para adicionar uma nova pontuação
+app.post('/api/addScore', (req, res) => {
+  const { userName, score, timeTaken } = req.body;
+  if (userName && score !== undefined && timeTaken !== undefined) {
+    const scores = readScoresFromFile();
+    scores.push({ userName, score, timeTaken });
+    writeScoresToFile(scores);
+    res.status(201).json({ message: 'Pontuação adicionada com sucesso!' });
+  } else {
+    res.status(400).json({ message: 'Dados inválidos!' });
+  }
+});
+
+// Rota para resetar as pontuações
+app.post('/api/resetScores', (req, res) => {
+  writeScoresToFile([]); // Limpa o array de pontuações
+  res.status(200).json({ message: 'Pontuações resetadas com sucesso!' });
+});
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
