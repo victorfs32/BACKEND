@@ -21,10 +21,9 @@ app.post('/scores', (req, res) => {
     return res.status(400).json({ error: 'Dados inválidos' });
   }
 
-  // Caminho para o arquivo JSON
   const filePath = path.join(__dirname, 'resultados.json');
+  console.log(`Lendo e escrevendo no arquivo: ${filePath}`);
 
-  // Ler os dados existentes
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err && err.code !== 'ENOENT') {
       console.error('Erro ao ler o arquivo:', err);
@@ -41,10 +40,8 @@ app.post('/scores', (req, res) => {
       }
     }
 
-    // Adiciona o novo resultado
     scores.push({ userName, score, timeTaken });
 
-    // Salva os dados no arquivo
     fs.writeFile(filePath, JSON.stringify(scores, null, 2), (err) => {
       if (err) {
         console.error('Erro ao salvar o arquivo:', err);
