@@ -2,51 +2,50 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-
 const app = express();
 const port = process.env.PORT || 3000;
-
-const resultsFilePath = path.join(__dirname, 'results.json');
 
 // Configura o CORS para permitir requisições do domínio do frontend
 app.use(cors({
   origin: 'https://www.ensinandolibras.com.br',
 }));
 
+app.use(express.json()); // Para parsear JSON no corpo das requisições
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
 
-// Função para ler resultados do arquivo JSON
-const readResultsFromFile = () => {
-  if (fs.existsSync(resultsFilePath)) {
-    const data = fs.readFileSync(resultsFilePath, 'utf8');
-    return JSON.parse(data);
-  }
-  return [];
-};
-
-// Função para salvar resultados no arquivo JSON
-const saveResultsToFile = (results) => {
-  fs.writeFileSync(resultsFilePath, JSON.stringify(results, null, 2), 'utf8');
-};
-
-// Endpoint para salvar os resultados
+// Endpoint para salvar as pontuações
 app.post('/scores', (req, res) => {
   const { userName, score, timeTaken } = req.body;
-  const results = readResultsFromFile();
-  results.push({ userName, score, timeTaken });
-  saveResultsToFile(results);
-  res.status(201).send('Score saved');
-});
+  
+  if (!userName || score === undefined || timeTaken === undefined) {
+    return res.status(400).json({ error: 'Dados inválidos' });
+  }
 
-// Endpoint para recuperar resultados
-app.get('/scores', (req, res) => {
-  const results = readResultsFromFile();
-  res.json(results);
-});
+  // Caminho para o arquivo JSON
+  const filePath = path.join(__dirname, 'resultados.json');
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+  // Ler os dados existentes
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err && err.code !== 'ENOENT') {
+      return res.status(500).json({ error: 'Erro ao ler o arquivo' });
+    }
+
+    let scores = [];
+    if (data) {
+      scores = JSON.parse(data);
+    }
+
+    // Adiciona o novo resultado
+    scores.push({ userName, score, timeTaken });
+
+    // Salva os dados no arquivo
+    fs.writeFile(filePath, JSON.stringify(scores, null, 2), (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Erro ao salvar o arquivo' });
+      }
+      res.status(201).json({ message: 'Pontuação salva com sucesso' });
+    });
+  });
 });
 
 app.listen(port, () => {
