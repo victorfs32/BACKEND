@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Caminho do arquivo de resultados
+// Caminho para o arquivo de resultados
 const resultadosPath = path.join(__dirname, 'resultados.json');
 
 // Configura o CORS para permitir requisições do domínio do frontend
@@ -15,7 +15,7 @@ app.use(cors({
 
 app.use(express.json()); // Para interpretar JSON
 
-// Função para ler os resultados do arquivo
+// Função para ler o arquivo de resultados
 const readScoresFromFile = () => {
   try {
     if (fs.existsSync(resultadosPath)) {
@@ -30,10 +30,11 @@ const readScoresFromFile = () => {
   }
 };
 
-// Função para escrever os resultados no arquivo
+// Função para escrever no arquivo de resultados
 const writeScoresToFile = (scores) => {
   try {
     fs.writeFileSync(resultadosPath, JSON.stringify(scores, null, 2));
+    console.log('Pontuações salvas com sucesso!');
   } catch (error) {
     console.error('Erro ao escrever no arquivo de resultados:', error);
   }
