@@ -17,12 +17,17 @@ app.use(cors({
 app.use(express.json()); // Para interpretar JSON
 
 // Função para ler dados do arquivo
-const readFile = (filePath) => {
+const readFile = (filePath, defaultValue = []) => {
   if (fs.existsSync(filePath)) {
     const data = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(data);
+    try {
+      return JSON.parse(data);
+    } catch (error) {
+      console.error(`Erro ao parsear o arquivo ${filePath}:`, error);
+      return defaultValue;
+    }
   } else {
-    return {};
+    return defaultValue;
   }
 };
 
@@ -45,7 +50,7 @@ app.get('/api/ranking', (req, res) => {
 // Rota para obter e salvar o nome do usuário
 app.get('/api/user', (req, res) => {
   try {
-    const user = readFile(userFilePath);
+    const user = readFile(userFilePath, {});
     res.json(user);
   } catch (error) {
     console.error('Erro ao obter o nome do usuário:', error);
@@ -75,7 +80,7 @@ app.post('/api/scores', (req, res) => {
   }
 
   try {
-    const scores = readFile(scoresFilePath);
+    const scores = readFile(scoresFilePath, []);
     scores.push({ userName, score, timeTaken });
     scores.sort((a, b) => a.timeTaken - b.timeTaken); // Ordenar pelo menor tempo
     writeFile(scoresFilePath, scores);
