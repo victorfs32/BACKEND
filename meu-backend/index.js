@@ -1,111 +1,57 @@
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(express.json());
+app.use(cors());
 
-// Caminho para os arquivos de dados
-const scoresFilePath = path.join(__dirname, 'resultados.json');
-const userFilePath = path.join(__dirname, 'user.json');
+const port = process.env.PORT || 3001;
 
-// Configura o CORS para permitir requisições de domínios específicos
-const allowedOrigins = [
-  'https://zingy-cocada-c2dd55.netlify.app',
-  'https://main--zingy-cocada-c2dd55.netlify.app'
-];
+// Armazenamento em memória para usuários
+const users = [];
 
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-}));
-
-app.use(express.json()); // Para interpretar JSON
-
-// Função para ler dados do arquivo
-const readFile = (filePath, defaultValue = []) => {
-  if (fs.existsSync(filePath)) {
-    const data = fs.readFileSync(filePath, 'utf8');
-    try {
-      return JSON.parse(data);
-    } catch (error) {
-      console.error(`Erro ao parsear o arquivo ${filePath}:`, error);
-      return defaultValue;
-    }
-  } else {
-    return defaultValue;
-  }
-};
-
-// Função para salvar dados no arquivo
-const writeFile = (filePath, data) => {
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-};
-
-// Rota para obter as pontuações
-app.get('/api/ranking', (req, res) => {
-  try {
-    const scores = readFile(scoresFilePath);
-    res.json(scores);
-  } catch (error) {
-    console.error('Erro ao obter pontuações:', error);
-    res.status(500).json({ message: 'Erro ao obter pontuações!' });
-  }
+// Endpoint de teste
+app.get("/", (req, res) => {
+  return res.json("Hello World");
 });
 
-// Rota para obter e salvar o nome do usuário
-app.get('/api/user', (req, res) => {
-  try {
-    const user = readFile(userFilePath, {});
-    res.json(user);
-  } catch (error) {
-    console.error('Erro ao obter o nome do usuário:', error);
-    res.status(500).json({ message: 'Erro ao obter o nome do usuário!' });
-  }
+// Endpoint para obter todos os usuários
+app.get("/users", (req, res) => {
+  return res.json(users);
 });
 
-app.post('/api/user', (req, res) => {
-  const { userName } = req.body;
-  if (!userName) {
-    return res.status(400).json({ message: 'Nome do usuário é obrigatório!' });
-  }
-  try {
-    writeFile(userFilePath, { userName });
-    res.json({ message: 'Nome do usuário salvo com sucesso!' });
-  } catch (error) {
-    console.error('Erro ao salvar o nome do usuário:', error);
-    res.status(500).json({ message: 'Erro ao salvar o nome do usuário!' });
-  }
-});
+// Endpoint para criar um novo usuário
+app.post("/users", (req, res) => {
+  const { name, email } = req.body;
 
-// Rota para salvar as pontuações
-app.post('/api/scores', (req, res) => {
-  const { userName, score, timeTaken } = req.body;
-  if (!userName || score === undefined || timeTaken === undefined) {
-    return res.status(400).json({ message: 'Dados incompletos!' });
+  // Verifica se o nome e o e-mail foram fornecidos
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Nome e e-mail são obrigatórios' });
   }
 
-  try {
-    const scores = readFile(scoresFilePath, []);
-    scores.push({ userName, score, timeTaken });
-    scores.sort((a, b) => a.timeTaken - b.timeTaken); // Ordenar pelo menor tempo
-    writeFile(scoresFilePath, scores);
-    res.json({ message: 'Pontuação salva com sucesso!' });
-  } catch (error) {
-    console.error('Erro ao salvar a pontuação:', error);
-    res.status(500).json({ message: 'Erro ao salvar a pontuação!' });
+  const newUser = {
+    id: Math.random().toString(36).substr(2, 9), // Gera um ID único
+    name,
+    email,
+  };
+
+  users.push(newUser);
+  return res.json(newUser);
+});
+
+// Endpoint para excluir um usuário pelo ID
+app.delete("/users/:id", (req, res) => {
+  const { id } = req.params;
+
+  // Encontra o índice do usuário com o ID fornecido
+  const index = users.findIndex(user => user.id === id);
+
+  if (index < 0) {
+    return res.status(404).json({ error: 'Usuário não encontrado' });
   }
+
+  users.splice(index, 1);
+  return res.status(204).json();
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
-
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`Listening on port ${port}`));
