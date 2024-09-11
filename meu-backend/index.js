@@ -9,9 +9,20 @@ const port = process.env.PORT || 3000;
 const scoresFilePath = path.join(__dirname, 'resultados.json');
 const userFilePath = path.join(__dirname, 'user.json');
 
-// Configura o CORS para permitir requisições do domínio do frontend
+// Configura o CORS para permitir requisições de domínios específicos
+const allowedOrigins = [
+  'https://zingy-cocada-c2dd55.netlify.app',
+  'https://main--zingy-cocada-c2dd55.netlify.app'
+];
+
 app.use(cors({
-  origin: 'https://zingy-cocada-c2dd55.netlify.app/',
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
 }));
 
 app.use(express.json()); // Para interpretar JSON
