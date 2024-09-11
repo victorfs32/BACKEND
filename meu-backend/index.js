@@ -10,7 +10,7 @@ const scoresFilePath = path.join(__dirname, 'resultados.json');
 
 // Configura o CORS para permitir requisições do domínio do frontend
 app.use(cors({
-  origin: 'https://www.ensinandolibras.com.br',
+  origin: 'https://zingy-cocada-c2dd55.netlify.app/',
 }));
 
 app.use(express.json()); // Para interpretar JSON
